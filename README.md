@@ -25,7 +25,7 @@ You'll be greeted by a VitaGrafix Settings screen, which contains the override s
 
 * **Left and Right on the DPAD:**
   * If the selection is on the game list, it will scroll through the games
-  * Of the selection is either on Framebuffer or FPS, it will scroll through the available modes for those options
+  * If the selection is either on Framebuffer or FPS, it will scroll through the available modes for those options
   
  * **Triangle:** If the selection is on any of the fields that have a (Default:) text in front of them, it will set those fields to the default value
  
