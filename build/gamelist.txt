@@ -1,0 +1,143 @@
+[Asphalt: Injection]
+ID=PCSB00040,PCSE00007
+FB=false
+IB=960x544
+FPS=false
+
+[Borderlands 2]
+ID=PCSF00570,PCSE00383
+FB=OFF
+IB=false
+FPS=false
+
+[Dead or Alive 5 Plus]
+ID=PCSB00296,PCSE00235,PCSG00167
+FB=false
+IB=960x544
+FPS=false
+
+[Dragon Quest Builders]
+ID=PCSE00912,PCSB00981,PCSE00912
+FB=false
+IB=960x544
+FPS=false
+
+[F1 2011]
+ID=PCSB00027
+FB=false
+IB=960x544
+FPS=false	
+
+[God of War Collection]
+ID=PCSF00438,PCSA00126,PCSC00059
+FB=960x544
+IB=false
+FPS=60
+
+[Hatsune Miku: Project Diva f]
+ID=PCSB00419,PCSE00326,PCSG00074
+FB=false
+IB=false
+FPS=OFF
+
+[Jak and Daxter Collection]
+ID=PCSF00247,PCSF00248,PCSF00249,PCSF00250,PCSA00080
+FB=960x544
+IB=false
+FPS=false
+
+[Killzone: Mercenary]
+ID=PCSF00243,PCSF00403,PCSA00107,PCSC00045,PCSD00071
+FB=false
+IB=OFF
+FPS=OFF
+
+[LEGO Star Wars: The Force Awakens]
+ID=PCSB00877,PCSE00791
+FB=false
+IB=720x408
+FPS=false
+
+[LittleBigPlanet]
+ID=PCSF00021,PCSA00017,PCSC00013,PCSD00006
+FB=false
+IB=OFF
+FPS=false
+
+[Miracle Girls Festival]
+ID=PCSG00610
+FB=false
+IB=960x544
+FPS=false
+
+[MotoGP 13]
+ID=PCSB00316,PCSE00409
+FB=false
+IB=960x544
+FPS=false
+
+[MotoGP 14]
+ID=PCSE00529
+FB=false
+IB=960x544
+FPS=false
+
+[MUD - FIM Motocross World Championship]
+ID=PCSB00182
+FB=false
+IB=960x544
+FPS=false
+
+[MXGP: The Official Motocross Videogame]
+ID=PCSB00470,PCSE00530
+FB=false
+IB=960x544
+FPS=false
+
+[Persona 4 Golden]
+ID=PCSB00245,PCSE00120,PCSG00004,PCSG00563,PCSH00021
+FB=false
+IB=960x544
+FPS=false
+
+[Ridge Racer]
+ID=PCSB00048,PCSE00001,PCSG00001
+FB=false
+IB=960x544
+FPS=false
+
+[Utawarerumono: Mask of Deception / Itsuwari no Kamen]
+ID=PCSE00959,PCSG00617,PCSB01093
+FB=false
+IB=960x544
+FPS=false
+
+[Utawarerumono: Mask of Truth / Futari no Hakuoro]
+ID=PCSG00838,PCSE01102,PCSB01145
+FB=false
+IB=960x544
+FPS=false
+
+[World of Final Fantasy]
+ID=PCSB00951,PCSE00880,PCSH00223,PCSG00709
+FB=false
+IB=800x480
+FPS=false
+
+[WRC 3: FIA World Rally Championship]
+ID=PCSB00204
+FB=false
+IB=960x544
+FPS=false
+
+[WRC 4: FIA World Rally Championship]
+ID=PCSB00345,PCSE00411
+FB=false
+IB=960x544
+FPS=false
+
+[WRC 5: FIA World Rally Championship]
+ID=PCSB00762
+FB=960x544
+IB=false
+FPS=false
