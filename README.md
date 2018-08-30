@@ -1,6 +1,8 @@
 # ![VitaGrafix Configurator](https://i.imgur.com/hIdE4yQ.png)
 A GUI Configurator for the VitaGrafix plugin
 
+[Download Here](https://github.com/Kirezar/VitaGrafixConfigurator/releases)
+
 ## Requirements
 
 This app requires the instalation of [VitaGrafix by Electry](https://github.com/Electry/VitaGrafix)
