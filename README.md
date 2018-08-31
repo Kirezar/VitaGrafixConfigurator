@@ -30,7 +30,7 @@ You'll be greeted by a VitaGrafix Settings screen, which contains the override s
   * If the selection is on the game list, it will scroll through the games
   * If the selection is either on Framebuffer or FPS, it will scroll through the available modes for those options
   
- * **Triangle:** If the selection is on any of the fields that have a (Default:) text in front of them, it will set those fields to the default value
+ * **Triangle:** If the selection is on any of the fields that have a (Default:) text in front of them, it will set those fields to the default value. The default value is the VitaGrafix plugin default and not the game default.
  
  * **L and R:** Moves trough the list of games (same as Left and Right but without the need of selecting the game list)
  
