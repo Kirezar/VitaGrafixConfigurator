@@ -37,8 +37,20 @@ FPS=60
 [Hatsune Miku: Project Diva f]
 ID=PCSB00419,PCSE00326,PCSG00074
 FB=false
-IB=false
+IB=OFF
 FPS=OFF
+
+[Hatsune Miku: Project Diva f 2nd]
+ID=PCSB00554,PCSE00434,PCSG00205,PCSH00088
+FB=false
+IB=OFF
+FPS=OFF
+
+[Hatsune Miku: Project Diva X]
+ID=PCSB01007,PCSE00867,PCSH00176
+FB=false
+IB=OFF
+FPS=false
 
 [Jak and Daxter Collection]
 ID=PCSF00247,PCSF00248,PCSF00249,PCSF00250,PCSA00080
@@ -106,6 +118,18 @@ FB=false
 IB=960x544
 FPS=false
 
+[Sly Cooper and the Thievius Raccoonus]
+ID=PCSA00096
+FB=960x544
+IB=false
+FPS=60
+
+[The Amazing Spider-Man]
+ID=PCSB00428
+FB=false
+IB=OFF
+FPS=OFF
+
 [Utawarerumono: Mask of Deception / Itsuwari no Kamen]
 ID=PCSE00959,PCSG00617,PCSB01093
 FB=false
@@ -138,6 +162,6 @@ FPS=false
 
 [WRC 5: FIA World Rally Championship]
 ID=PCSB00762
-FB=960x544
+FB=OFF
 IB=false
 FPS=false
