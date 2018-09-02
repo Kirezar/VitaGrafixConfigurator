@@ -73,6 +73,20 @@ function NilButtons()
   save_button = nil
 end
 
+function GetVersion()
+  local file = System.openFile("app0:/versions.txt")
+  System.seekFile(file, 0, SET)
+  local version_text = System.readFile(file, System.sizeFile(file))
+  System.closeFile(file)
+  Network.init()
+  if Network.isWifiEnabled() then
+    Network.downloadFile("github.com/Kirezar/VitaGrafixConfigurator/blob/master/build/versions.txt", "app0:/new_versions.txt")
+    --[[file = System.openFile("app0:/new_versions.txt")
+    System.seekFile(file, 0, SET)
+    local version_text = System.readFile(file, System.sizeFile(file))--]]
+  end
+end
+
 -- Draw the selection rect
 function DrawSelectionRect()
   Graphics.fillRect(selectionRectX, selectionRectX + selectionWidth, selectionRectY, selectionRectY + selectionHeight, Color.new(0,0,255)) 
@@ -685,6 +699,7 @@ function Start()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
+  GetVersion()
 end
 
 ------------------------------------------------------------------------------------------------- Code Execution ----------------------------------------------------------------------------
