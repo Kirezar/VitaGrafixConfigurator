@@ -63,6 +63,14 @@ isWaitingToScroll = false
 pad = 0 -- Controller
 previousPad = 0 -- Controller previous state, used to check if a button was just pressed, or if it is held down
 
+needsToGetVersion = true
+result = ""
+list_version = ""
+app_version = ""
+list_v_num = 0
+app_v_num = 0
+app_folder = "VGCF00001"
+
 timerObj = Timer.new()
 
 -- Set Buttons to nil each frame
@@ -73,18 +81,231 @@ function NilButtons()
   save_button = nil
 end
 
-function GetVersion()
-  local file = System.openFile("app0:/versions.txt")
+function DownloadFile(str)
+  -- Opening a new socket and connecting to the host
+  skt = Socket.connect("vgcfvita.000webhostapp.com", 80)
+
+  -- Our payload to request a file
+  payload = "GET /" .. str .. " HTTP/1.1\r\nHost: vgcfvita.000webhostapp.com\r\n\r\n"
+
+  -- Sending request
+  Socket.send(skt, payload)
+
+  -- Since sockets are non blocking, we wait till at least a byte is received
+  raw_data = ""
+  retry = 0
+  while raw_data == "" or retry < 1000 do
+    raw_data = raw_data .. Socket.receive(skt, 8192)
+    retry = retry + 1
+  end
+
+  if string.match(raw_data, "Length: ") then
+    -- Keep downloading till the whole response is received
+    dwnld_data = raw_data
+    retry = 0
+    while dwnld_data ~= "" or retry < 1000 do
+      dwnld_data = Socket.receive(skt, 8192)
+      raw_data = raw_data .. dwnld_data
+      if dwnld_data == "" then
+        retry = retry + 1
+      else
+        retry = 0
+      end
+    end
+
+    -- Extracting Content-Length value
+    offs1, offs2 = string.find(raw_data, "Length: ")
+    offs3 = string.find(raw_data, "\r", offs2)
+    content_length = tonumber(string.sub(raw_data, offs2, offs3))
+
+    -- Saving downloaded image
+    stub, content_offset = string.find(raw_data, "\r\n\r\n")
+    handle = System.openFile("ux0:data/new_".. str, FCREATE)
+    content = string.sub(raw_data, content_offset+1)
+    System.writeFile(handle, string.sub(raw_data, content_offset+1), string.len(content))
+    System.closeFile(handle)
+
+  else
+    Socket.close(skt)
+    return -1
+  end
+  -- Closing socket
+  Socket.close(skt)
+  return 1
+end
+
+
+function GetLocalVersion()
+
+  local file = System.openFile("app0:/versions.txt", FREAD)
   System.seekFile(file, 0, SET)
   local version_text = System.readFile(file, System.sizeFile(file))
   System.closeFile(file)
-  Network.init()
-  if Network.isWifiEnabled() then
-    Network.downloadFile("github.com/Kirezar/VitaGrafixConfigurator/blob/master/build/versions.txt", "app0:/new_versions.txt")
-    --[[file = System.openFile("app0:/new_versions.txt")
-    System.seekFile(file, 0, SET)
-    local version_text = System.readFile(file, System.sizeFile(file))--]]
+
+  local i,j = string.find(version_text, "gamelist=%d+%.%d+")
+  list_version = string.sub(version_text, i, j)
+  local list_version_num = GetNumber(list_version)
+
+  i,j = string.find(version_text, "app=%d+%.%d+")
+  app_version = string.sub(version_text, i, j)
+  local app_version_num = GetNumber(app_version)
+
+  if not System.doesFileExist("ux0:data/Vitagrafix/versions.txt") then
+    file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
+    System.writeFile(file, version_text, string.len(version_text))
+    System.closeFile(file)
+    return
   end
+
+  file = System.openFile("ux0:data/Vitagrafix/versions.txt", FREAD)
+  System.seekFile(file, 0, SET)
+  local ux_version_text = System.readFile(file, System.sizeFile(file))
+  System.closeFile(file)
+
+  local i,j = string.find(ux_version_text, "gamelist=%d+%.%d+")
+  ux_list_version = string.sub(ux_version_text, i, j)
+  local ux_list_version_num = GetNumber(ux_list_version)
+
+  i,j = string.find(ux_version_text, "app=%d+%.%d+")
+  ux_app_version = string.sub(ux_version_text, i, j)
+  local ux_app_version_num = GetNumber(ux_app_version)
+
+  if list_version_num > ux_list_version_num or app_version_num > ux_app_version_num then
+    file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
+    System.writeFile(file, version_text, string.len(version_text))
+    System.closeFile(file)
+  end
+
+
+
+end
+
+function GetVersion()
+  
+  GetLocalVersion()
+  local file = System.openFile("ux0:/data/VitaGrafix/versions.txt", FREAD)
+  System.seekFile(file, 0, SET)
+  local version_text = System.readFile(file, System.sizeFile(file))
+  System.closeFile(file)
+
+  local i,j = string.find(version_text, "gamelist=%d+%.%d+")
+  list_version = string.sub(version_text, i, j)
+  local list_version_num = GetNumber(list_version)
+
+  i,j = string.find(version_text, "app=%d+%.%d+")
+  app_version = string.sub(version_text, i, j)
+  local app_version_num = GetNumber(app_version)
+
+  -- Initializing Network
+  Network.init()
+
+  -- Checking if connection is available
+  if Network.isWifiEnabled() then
+
+    if DownloadFile("versions.txt") == 1 then
+
+      -- Loading image in memory and deleting it from storage
+      local new_version_file = System.openFile("ux0:data/new_versions.txt", FREAD)
+      System.seekFile(new_version_file, 0, SET)
+      local new_version_text = System.readFile(new_version_file, System.sizeFile(new_version_file))
+      System.closeFile(new_version_file)
+      result = new_version_text
+      System.deleteFile("ux0:/data/new_versions.txt")
+
+      i,j = string.find(new_version_text, "gamelist=%d+%.%d+")
+      local new_list_version = string.sub(new_version_text, i, j)
+      i,j = string.find(new_version_text, "app=%d+%.%d+")
+      local new_app_version = string.sub(new_version_text, i, j)
+
+      local new_list_number = GetNumber(new_list_version)
+      local new_app_number = GetNumber(new_app_version)
+      
+      --if not string.match(new_app_version, app_version) then 
+
+      if not string.match(new_list_version, list_version) then
+        local wantsToUpdate = 0
+        
+        while wantsToUpdate == 0 do
+
+          EndDraw()
+          BeginDraw()
+
+          pad = Controls.read()
+          Graphics.debugPrint(250, 192, "New game list version found, do you want to update?", Color.new(255,255,255))
+          Graphics.debugPrint(280, 232, "Current Version: " .. tostring(list_version_num) .. "  New Version: " .. tostring(new_list_number), Color.new(255,255,255))
+          Graphics.debugPrint(350, 262, "Cross: Yes   Circle: No", Color.new(255,255,255))
+
+          if pad ~= previousPad then
+            if Controls.check(pad, SCE_CTRL_CROSS) then
+              wantsToUpdate = 1
+            elseif Controls.check(pad, SCE_CTRL_CIRCLE) then
+              wantsToUpdate = 2
+            end
+          end
+
+          previousPad = pad
+          EndDraw()
+
+        end
+
+        if wantsToUpdate == 1 then
+          if DownloadFile("gamelist.txt") == 1 then
+            local new_game_list = System.openFile("ux0:data/new_gamelist.txt", FREAD)
+            System.seekFile(new_game_list, 0, SET)
+            local new_list_text = System.readFile(new_game_list, System.sizeFile(new_game_list))
+            System.closeFile(new_game_list)
+            System.deleteFile("ux0:data/new_gamelist.txt")
+            new_game_list = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FCREATE)
+            System.writeFile(new_game_list, new_list_text, string.len(new_list_text))
+            System.closeFile(new_game_list)
+            games = {}
+            gameCounter = 1
+            Start()
+
+            file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
+            System.writeFile(file, new_version_text, string.len(new_version_text))
+            System.closeFile(file)
+          else
+            EndDraw()
+            BeginDraw()
+            Graphics.debugPrint(250, 192, "Error while downloading lists", Color.new(255,255,255))
+            EndDraw()
+            System.wait(1000000)
+          end
+        end
+      end
+    else
+      EndDraw()
+      BeginDraw()
+      Graphics.debugPrint(250, 192, "Error while checking version", Color.new(255,255,255))
+      EndDraw()
+      System.wait(1000000)
+    end
+
+  end
+
+  Network.term()
+
+  local file = System.openFile("ux0:/data/VitaGrafix/versions.txt", FREAD)
+  System.seekFile(file, 0, SET)
+  local version_text = System.readFile(file, System.sizeFile(file))
+  System.closeFile(file)
+
+  local i,j = string.find(version_text, "gamelist=%d+%.%d+")
+  list_version = string.sub(version_text, i, j)
+  list_v_num = GetNumber(list_version)
+
+  i,j = string.find(version_text, "app=%d+%.%d+")
+  app_version = string.sub(version_text, i, j)
+  app_v_num = GetNumber(app_version)
+
+
+end
+
+function GetNumber(str)
+    local i,j = string.find(str, "%d+%.%d+")
+    local number = tonumber(string.sub(str, i, j))
+    return number
 end
 
 -- Draw the selection rect
@@ -196,8 +417,18 @@ end
 
 -- Add games to the game list
 function CreateGameList()
+  System.createDirectory("ux0:data/VitaGrafix")
+  if not System.doesFileExist("ux0:data/VitaGrafix/gamelist.txt") then
+    local original_file = System.openFile("app0:/gamelist.txt", FREAD)
+    System.seekFile(original_file, 0, SET)
+    game_list = System.readFile(original_file, System.sizeFile(original_file))
+    System.closeFile(original_file)
+    local new_file = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FCREATE)
+    System.writeFile(new_file, game_list, string.len(game_list))
+    System.closeFile(new_file)
 
-  local file = System.openFile("app0:/gamelist.txt", FREAD)
+  end
+  local file = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FREAD)
   System.seekFile(file, 0, SET)
   game_list = System.readFile(file, System.sizeFile(file)) 
   local name, ids, fb, ib, fps, point = ReadGameParams(0) -- Read First Game Parameters
@@ -212,7 +443,7 @@ end
 
 -- Finds current settings for all games
 function FindCurrentSettings()
-  System.createDirectory("ux0:data/VitaGrafix")
+  
   local file = nil
   if System.doesFileExist("ux0:data/VitaGrafix/config.txt") then
     file = System.openFile("ux0:data/VitaGrafix/config.txt", FREAD)
@@ -441,6 +672,9 @@ function GUI()
   local objectNum = 0 -- Number of clickables buttons on the screen
 
   Graphics.debugPrint(5, 10, "VitaGrafix Configurator", Color.new(255,255,255))
+
+  Graphics.debugPrint(300, 10, "List: " .. tostring(list_v_num), Color.new(255,255,255))
+  Graphics.debugPrint(400, 10, "App: " .. tostring(app_v_num), Color.new(255,255,255))
 
  
   if gameCounter == 0 then  -- If on VitaGrafix settings
@@ -699,7 +933,7 @@ function Start()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
-  GetVersion()
+  --GetVersion()
 end
 
 ------------------------------------------------------------------------------------------------- Code Execution ----------------------------------------------------------------------------
@@ -713,8 +947,16 @@ while true do
   if (Timer.getTime(timerObj) >= 16.7) then
     
     Timer.reset(timerObj)
-    
-    
+
+    if needsToGetVersion then
+      GetVersion()
+      needsToGetVersion = false
+    end
+
+    if System.getAsyncState() == 1 then
+      result = System.getAsyncResult()
+    end 
+
     BeginDraw()
     if Keyboard.getState() ~= RUNNING then 
       
