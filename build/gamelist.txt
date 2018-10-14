@@ -5,7 +5,7 @@ IB=960x544
 FPS=false
 
 [Borderlands 2]
-ID=PCSF00570,PCSE00383
+ID=PCSF00570,PCSE00383,PCSF00576
 FB=OFF
 IB=false
 FPS=false
@@ -16,11 +16,17 @@ FB=false
 IB=960x544
 FPS=false
 
+[Dragon Ball Z: Battle of Z]
+ID=PCSB00396,PCSE00305,PCSG00213
+FB=false
+IB=OFF
+FPS=false
+
 [Dragon Quest Builders]
 ID=PCSE00912,PCSB00981,PCSE00912
 FB=false
 IB=960x544
-FPS=false
+FPS=OFF
 
 [F1 2011]
 ID=PCSB00027
@@ -106,10 +112,40 @@ FB=false
 IB=960x544
 FPS=false
 
+[Ninja Gaiden Sigma 2 Plus]
+ID=PCSB00294,PCSE00233,PCSG00157
+FB=false
+IB=OFF
+FPS=false
+
 [Persona 4 Golden]
 ID=PCSB00245,PCSE00120,PCSG00004,PCSG00563,PCSH00021
 FB=false
 IB=960x544
+FPS=false
+
+[Ratchet & Clank]
+ID=PCSF00484,PCSF00482,PCSA00133
+FB=OFF
+IB=false
+FPS=false
+
+[Ratchet & Clank: Going Commando / Ratchet & Clank 2: Locked and Loaded]
+ID=PCSF00485,PCSF00482,PCSA00133
+FB=OFF
+IB=false
+FPS=false
+
+[Ratchet & Clank: Up Your Arsenal / Ratchet & Clank 3]
+ID=PCSF00486,PCSF00482,PCSA00133
+FB=OFF
+IB=false
+FPS=false
+
+[Ratchet & Clank: QForce / Ratchet & Clank: Full Frontal Assault]
+ID=PCSF00191,PCSA00086
+FB=OFF
+IB=false
 FPS=false
 
 [Ridge Racer]
@@ -140,6 +176,12 @@ FPS=false
 ID=PCSG00838,PCSE01102,PCSB01145
 FB=false
 IB=960x544
+FPS=false
+
+[Utawarerumono: Chiriyuku Mono he no Komoriuta]
+ID=PCSG01079
+FB=false
+IB=672x384
 FPS=false
 
 [World of Final Fantasy]

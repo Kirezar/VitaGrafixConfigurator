@@ -63,13 +63,15 @@ isWaitingToScroll = false
 pad = 0 -- Controller
 previousPad = 0 -- Controller previous state, used to check if a button was just pressed, or if it is held down
 
-needsToGetVersion = true
+checkForUpgrade = false
 result = ""
 list_version = ""
 app_version = ""
 list_v_num = 0
 app_v_num = 0
 app_folder = "VGCF00001"
+
+auto_update = false
 
 timerObj = Timer.new()
 
@@ -79,6 +81,38 @@ function NilButtons()
   ib_button = nil
   fps_button = nil
   save_button = nil
+end
+
+function ReadAppConfig()
+
+  local file = nil
+  if System.doesFileExist("ux0:data/VitaGrafix/appconfig.txt") == false then
+    file = System.openFile("ux0:data/VitaGrafix/appconfig.txt", FCREATE)
+    local str = "auto_update=0"
+    System.writeFile(file, str, string.len(str))
+    System.closeFile(file)
+  end
+  file = System.openFile("ux0:data/VitaGrafix/appconfig.txt", FREAD)
+  System.seekFile(file, 0, SET)
+  local app_cfg = System.readFile(file, System.sizeFile(file))
+  System.closeFile(file)
+
+  if string.match( app_cfg, "auto_update=1") then
+    auto_update = true
+  end
+
+end
+
+function WriteAppConfig()
+  local file = System.openFile("ux0:data/VitaGrafix/appconfig.txt", FCREATE)
+  local str = "auto_update="
+  if auto_update then
+    str = str .. 1
+  else
+    str = str .. 0
+  end
+  System.writeFile(file, str, string.len(str))
+  System.closeFile(file)
 end
 
 function DownloadFile(str)
@@ -170,10 +204,26 @@ function GetLocalVersion()
   ux_app_version = string.sub(ux_version_text, i, j)
   local ux_app_version_num = GetNumber(ux_app_version)
 
+  list_v_num = ux_list_version_num
+  app_v_num = ux_app_version_num
+
   if list_version_num > ux_list_version_num or app_version_num > ux_app_version_num then
     file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
     System.writeFile(file, version_text, string.len(version_text))
     System.closeFile(file)
+
+    file = System.openFile("app0:/gamelist.txt", FREAD)
+    System.seekFile(file, 0, SET)
+    local gamelisttext = System.readFile(file, System.sizeFile(file))
+    System.closeFile(file)
+
+    file = System.openFile("ux0:data/Vitagrafix/gamelist.txt", FCREATE)
+    System.writeFile(file, gamelisttext, string.len(gamelisttext))
+    System.closeFile(file)
+
+    list_v_num = list_version_num
+    app_v_num = app_version_num
+
   end
 
 
@@ -197,6 +247,8 @@ function GetVersion()
   local app_version_num = GetNumber(app_version)
 
   -- Initializing Network
+
+  
   Network.init()
 
   -- Checking if connection is available
@@ -222,7 +274,7 @@ function GetVersion()
       
       --if not string.match(new_app_version, app_version) then 
 
-      if not string.match(new_list_version, list_version) then
+      if list_version_num < new_list_number then
         local wantsToUpdate = 0
         
         while wantsToUpdate == 0 do
@@ -298,7 +350,6 @@ function GetVersion()
   i,j = string.find(version_text, "app=%d+%.%d+")
   app_version = string.sub(version_text, i, j)
   app_v_num = GetNumber(app_version)
-
 
 end
 
@@ -695,6 +746,8 @@ function GUI()
 
     Graphics.debugPrint(5, 150, "Enabled", Color.new(255,255,255))
     Graphics.debugPrint(5, 180, "OSD", Color.new(255,255,255))
+    Graphics.debugPrint(5, 210, "Auto Update List", Color.new(255,255,255))
+    Graphics.debugPrint(5, 240, "Update Lists Now", Color.new(255,255,255))
 
     if main_enable == 1 then
       Graphics.debugPrint(250, 150, "X", Color.new(255,255,255))
@@ -708,14 +761,20 @@ function GUI()
       Graphics.debugPrint(250, 180, "", Color.new(255,255,255))
     end
 
+    if auto_update then
+      Graphics.debugPrint(250, 210, "X", Color.new(255,255,255))
+    else
+      Graphics.debugPrint(250, 210, "", Color.new(255,255,255))
+    end
 
 
-    objectNum = 2
+
+    objectNum = 4
 
     Graphics.debugPrint(5, 150 + 30 * objectNum, "Save Config", Color.new(255,255,255))
     save_button = objectNum + 1
 
-    available_buttons = 3
+    available_buttons = 5
 
   else -- If on any game
     
@@ -768,7 +827,7 @@ function GUI()
     if games[gameCounter].fb ~= "false" then
       Graphics.debugPrint(5, 150 + 30 * objectNum, "Framebuffer", Color.new(255,255,255))
       Graphics.debugPrint(250, 150 + 30 * objectNum, games[gameCounter].fb, Color.new(255,255,255))
-      Graphics.debugPrint(400, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_fb .. ")", Color.new(255,255,255)) 
+      Graphics.debugPrint(550, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_fb .. ")", Color.new(255,255,255)) 
       objectNum = objectNum + 1
       fb_button = objectNum
     end
@@ -776,7 +835,7 @@ function GUI()
     if games[gameCounter].ib ~= "false" then
       Graphics.debugPrint(5, 150 + 30 * objectNum, "Internal Resolution", Color.new(255,255,255))
       Graphics.debugPrint(250, 150 + 30 * objectNum, games[gameCounter].ib, Color.new(255,255,255))
-      Graphics.debugPrint(400, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_ib .. ")", Color.new(255,255,255))
+      Graphics.debugPrint(550, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_ib .. ")", Color.new(255,255,255))
       objectNum = objectNum + 1
       ib_button = objectNum
     end
@@ -784,7 +843,7 @@ function GUI()
     if games[gameCounter].fps ~= "false" then
       Graphics.debugPrint(5, 150 + 30 * objectNum, "FPS Cap", Color.new(255,255,255))
       Graphics.debugPrint(250, 150 + 30 * objectNum, games[gameCounter].fps, Color.new(255,255,255))
-      Graphics.debugPrint(400, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_fps .. ")", Color.new(255,255,255))
+      Graphics.debugPrint(550, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_fps .. ")", Color.new(255,255,255))
       objectNum = objectNum + 1
       fps_button = objectNum
     end
@@ -818,7 +877,16 @@ end
 
 -- Function called when X was pressed
 function CrossPressed()
-  if selected_button == 1 then -- Button 1 is the enabled option
+  if selected_button == save_button then -- Save button, saves ENTIRE CONFIG (not game specific changes)
+    WriteToFile()
+    WriteAppConfig()
+    EndDraw()
+    BeginDraw()
+    Graphics.debugPrint(350, 252, "Configuration Saved!", Color.new(255,255,255))
+    EndDraw()
+
+    System.wait(1000000)
+  elseif selected_button == 1 then -- Button 1 is the enabled option
     if gameCounter == 0 then
       main_enable = SwitchBool(main_enable)
     else
@@ -832,15 +900,15 @@ function CrossPressed()
     end
   elseif selected_button == ib_button then -- Internal res button, opens keyboard
     Keyboard.clear()
-    Keyboard.show("0 < X <= 960 and 0 < Y <= 544 or OFF", games[gameCounter].ib, 7, TYPE_DEFAULT, MODE_TEXT)
-  elseif selected_button == save_button then -- Save button, saves ENTIRE CONFIG (not game specific changes)
-    WriteToFile()
-    EndDraw()
-    BeginDraw()
-    Graphics.debugPrint(350, 252, "Configuration Saved!", Color.new(255,255,255))
-    EndDraw()
-
-    System.wait(1000000)
+    Keyboard.show("0 < X <= 960 and 0 < Y <= 544 or OFF", games[gameCounter].ib, 15, TYPE_DEFAULT, MODE_TEXT)
+  elseif selected_button == 3 then -- Button 3 is the Auto Update button
+    if gameCounter == 0 then
+      auto_update = not auto_update
+    end
+  elseif selected_button == 4 then -- Button 4 is the Update Now button
+    if gameCounter == 0 then
+      checkForUpgrade = true;
+    end
   end
 end
 
@@ -929,11 +997,17 @@ end
 
 -- Initialization function
 function Start()
+  
   CreateGameList()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
-  --GetVersion()
+  GetLocalVersion()
+  ReadAppConfig()
+  pad = Controls.read()
+  if auto_update == true and not Controls.check(pad, SCE_CTRL_LTRIGGER) then
+    checkForUpgrade = true
+  end
 end
 
 ------------------------------------------------------------------------------------------------- Code Execution ----------------------------------------------------------------------------
@@ -948,14 +1022,10 @@ while true do
     
     Timer.reset(timerObj)
 
-    if needsToGetVersion then
+    if (checkForUpgrade) then
       GetVersion()
-      needsToGetVersion = false
+      checkForUpgrade = false
     end
-
-    if System.getAsyncState() == 1 then
-      result = System.getAsyncResult()
-    end 
 
     BeginDraw()
     if Keyboard.getState() ~= RUNNING then 
