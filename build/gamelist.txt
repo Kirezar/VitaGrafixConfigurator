@@ -1,3 +1,9 @@
+[Assassin's Creed III: Liberation]
+ID=PCSB00074,PCSE00053
+FB=false
+IB=OFF
+FPS=OFF
+
 [Asphalt: Injection]
 ID=PCSB00040,PCSE00007
 FB=false
@@ -16,6 +22,12 @@ FB=false
 IB=960x544
 FPS=false
 
+[Dead or Alive Xtreme 3: Venus]
+ID=PCSG00773,PCSH00250,PCSH00281
+FB=false
+IB=OFF
+FPS=false
+
 [Dragon Ball Z: Battle of Z]
 ID=PCSB00396,PCSE00305,PCSG00213
 FB=false
@@ -27,6 +39,12 @@ ID=PCSE00912,PCSB00981,PCSE00912
 FB=false
 IB=960x544
 FPS=OFF
+
+[Fate/EXTELLA LINK (The Umbral Star)]
+ID=PCSG01091,PCSH10121
+FB=false
+IB=OFF
+FPS=false
 
 [F1 2011]
 ID=PCSB00027
@@ -148,6 +166,12 @@ FB=OFF
 IB=false
 FPS=false
 
+[Resident Evil: Revelations 2]
+ID=PCSF00728,PCSE00608,PCSG00594
+FB=false
+IB=OFF
+FPS=false
+
 [Ridge Racer]
 ID=PCSB00048,PCSE00001,PCSG00001
 FB=false
@@ -184,6 +208,18 @@ FB=false
 IB=OFF
 FPS=OFF
 
+[The Legend of Heroes: Trails of Cold Steel / Eiyuu Densetsu: Sen no Kiseki]
+ID=PCSB00866,PCSE00786,PCSG00195,PCSH00074
+FB=false
+IB=OFF
+FPS=false
+
+[The Legend of Heroes: Trails of Cold Steel II / Eiyuu Densetsu: Sen no Kiseki II]
+ID=PCSB01016,PCSE00896,PCSG00354,PCSH00075
+FB=false
+IB=OFF
+FPS=false
+
 [Utawarerumono: Mask of Deception / Itsuwari no Kamen]
 ID=PCSE00959,PCSG00617,PCSB01093
 FB=false
@@ -201,6 +237,12 @@ ID=PCSG01079
 FB=false
 IB=672x384
 FPS=false
+
+[Wipeout 2048]
+ID=PCSF00007,PCSA00015,PCSC00006,PCSD00005
+FB=false
+IB=OFF
+FPS=OFF
 
 [World of Final Fantasy]
 ID=PCSB00951,PCSE00880,PCSH00223,PCSG00709

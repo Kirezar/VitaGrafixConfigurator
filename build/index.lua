@@ -73,6 +73,8 @@ app_folder = "VGCF00001"
 
 auto_update = false
 
+current_version = true
+
 timerObj = Timer.new()
 
 -- Set Buttons to nil each frame
@@ -208,6 +210,7 @@ function GetLocalVersion()
   app_v_num = ux_app_version_num
 
   if list_version_num > ux_list_version_num or app_version_num > ux_app_version_num then
+    System.deleteFile("ux0:data/Vitagrafix/versions.txt")
     file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
     System.writeFile(file, version_text, string.len(version_text))
     System.closeFile(file)
@@ -272,7 +275,34 @@ function GetVersion()
       local new_list_number = GetNumber(new_list_version)
       local new_app_number = GetNumber(new_app_version)
       
-      --if not string.match(new_app_version, app_version) then 
+      if not string.match(new_app_version, app_version) then 
+        
+        local continue = 0
+
+        while continue == 0 do
+
+          EndDraw()
+          BeginDraw()
+
+          pad = Controls.read()
+          Graphics.debugPrint(250, 192, "Your version is outdated, please update", Color.new(255,255,255))
+          Graphics.debugPrint(280, 232, "Current Version: " .. tostring(app_version_num) .. "  New Version: " .. tostring(new_app_number), Color.new(255,255,255))
+          Graphics.debugPrint(350, 262, "Cross: Continue", Color.new(255,255,255))
+
+          if pad ~= previousPad then
+            if Controls.check(pad, SCE_CTRL_CROSS) then
+              continue = 1
+            end
+          end
+          previousPad = pad
+          EndDraw()
+        end
+
+        Network.term()
+        return
+
+
+      end
 
       if list_version_num < new_list_number then
         local wantsToUpdate = 0
@@ -834,7 +864,12 @@ function GUI()
 
     if games[gameCounter].ib ~= "false" then
       Graphics.debugPrint(5, 150 + 30 * objectNum, "Internal Resolution", Color.new(255,255,255))
-      Graphics.debugPrint(250, 150 + 30 * objectNum, games[gameCounter].ib, Color.new(255,255,255))
+
+      if string.len(games[gameCounter].ib) >= 20 then
+        Graphics.debugPrint(250, 150 + 30 * objectNum, "Multiple Resolutions", Color.new(255,255,255))
+      else
+        Graphics.debugPrint(250, 150 + 30 * objectNum, games[gameCounter].ib, Color.new(255,255,255))
+      end
       Graphics.debugPrint(550, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_ib .. ")", Color.new(255,255,255))
       objectNum = objectNum + 1
       ib_button = objectNum
@@ -867,11 +902,13 @@ function GUI()
       region_text = region_text .. "[Asia] "
     end
     Graphics.debugPrint(5, 360, region_text, Color.new(255,255,255))
+
+    if selected_button > 2 and selected_button < available_buttons then
+      Graphics.debugPrint(600, 10, "Press Triangle for default setting", Color.new(255,255,255))
+    end
   end
 
-  if selected_button > 2 and selected_button < available_buttons then
-    Graphics.debugPrint(600, 10, "Press Triangle for default setting", Color.new(255,255,255))
-  end
+  
 
 end
 
@@ -900,7 +937,7 @@ function CrossPressed()
     end
   elseif selected_button == ib_button then -- Internal res button, opens keyboard
     Keyboard.clear()
-    Keyboard.show("0 < X <= 960 and 0 < Y <= 544 or OFF", games[gameCounter].ib, 15, TYPE_DEFAULT, MODE_TEXT)
+    Keyboard.show("0 < X <= 960 and 0 < Y <= 544 or OFF", games[gameCounter].ib, 255, TYPE_DEFAULT, MODE_TEXT)
   elseif selected_button == 3 then -- Button 3 is the Auto Update button
     if gameCounter == 0 then
       auto_update = not auto_update
@@ -998,11 +1035,11 @@ end
 -- Initialization function
 function Start()
   
+  GetLocalVersion()
   CreateGameList()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
-  GetLocalVersion()
   ReadAppConfig()
   pad = Controls.read()
   if auto_update == true and not Controls.check(pad, SCE_CTRL_LTRIGGER) then

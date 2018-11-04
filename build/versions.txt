@@ -1,2 +1,2 @@
-gamelist=3.11
-app=1.2
+gamelist=3.2
+app=1.3
