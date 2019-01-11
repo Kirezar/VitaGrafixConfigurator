@@ -186,14 +186,14 @@ function GetLocalVersion()
   app_version = string.sub(version_text, i, j)
   local app_version_num = GetNumber(app_version)
 
-  if not System.doesFileExist("ux0:data/Vitagrafix/versions.txt") then
-    file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
+  if not System.doesFileExist("ux0:data/VitaGrafix/versions.txt") then
+    file = System.openFile("ux0:data/VitaGrafix/versions.txt", FCREATE)
     System.writeFile(file, version_text, string.len(version_text))
     System.closeFile(file)
     return
   end
 
-  file = System.openFile("ux0:data/Vitagrafix/versions.txt", FREAD)
+  file = System.openFile("ux0:data/VitaGrafix/versions.txt", FREAD)
   System.seekFile(file, 0, SET)
   local ux_version_text = System.readFile(file, System.sizeFile(file))
   System.closeFile(file)
@@ -210,8 +210,8 @@ function GetLocalVersion()
   app_v_num = ux_app_version_num
 
   if list_version_num > ux_list_version_num or app_version_num > ux_app_version_num then
-    System.deleteFile("ux0:data/Vitagrafix/versions.txt")
-    file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
+    System.deleteFile("ux0:data/VitaGrafix/versions.txt")
+    file = System.openFile("ux0:data/VitaGrafix/versions.txt", FCREATE)
     System.writeFile(file, version_text, string.len(version_text))
     System.closeFile(file)
 
@@ -220,7 +220,7 @@ function GetLocalVersion()
     local gamelisttext = System.readFile(file, System.sizeFile(file))
     System.closeFile(file)
 
-    file = System.openFile("ux0:data/Vitagrafix/gamelist.txt", FCREATE)
+    file = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FCREATE)
     System.writeFile(file, gamelisttext, string.len(gamelisttext))
     System.closeFile(file)
 
@@ -275,7 +275,7 @@ function GetVersion()
       local new_list_number = GetNumber(new_list_version)
       local new_app_number = GetNumber(new_app_version)
       
-      if not string.match(new_app_version, app_version) then 
+      if app_version_num < new_app_number then 
         
         local continue = 0
 
@@ -411,7 +411,7 @@ function GetLocations(game)
       game.usa = true
     elseif string.match( game.id[i],  "PCSF") or string.match( game.id[i],  "PCSB") then
       game.europe = true
-    elseif string.match( game.id[i],  "PCSH") or string.match( game.id[i],  "VCAS") or string.match( game.id[i],  "VLAS") then
+    elseif string.match( game.id[i],  "PCSH") or string.match( game.id[i],  "PCSD") or string.match( game.id[i],  "VCAS") or string.match( game.id[i],  "VLAS") then
       game.asia = true
     elseif string.match( game.id[i],  "PCSC") or string.match( game.id[i],  "VCJS") or string.match( game.id[i],  "PCSG") or string.match( game.id[i],  "VLJS") or string.match( game.id[i],  "VLJM") then
       game.japan = true
@@ -426,100 +426,135 @@ function GetRegions()
   end
 end
 
--- Get Parameters for one game on the gamelist.txt file
-function ReadGameParams(startPoint)
+function GetGameBlock(startPoint)
   local name = ""
-  local ids = {}
-  local fb = ""
-  local ib = ""
-  local fps = ""
-
-  local i,j = string.find(game_list, "%[(.-)%]", startPoint) -- Get game name
-
-  if i ~= nil then
-    name = string.sub(game_list, i+1, j-1)
-    local k,l = string.find(game_list, "ID=", j)
-    local delim = ","
-    local counter = 1
-
-    -- Get Game IDs
-    while delim == "," do
-      local id = string.sub(game_list, l+1, l+9)
-      ids[counter] = id
-      l = l+10
-      delim = string.sub(game_list, l, l)
-      counter = counter+1
-    end
-
-    -- Get game Framebuffer
-    k,l = string.find(game_list, "FB=", l)
-    if string.match(string.sub(game_list, l+1, l+5), "false") then
-      fb = "false"
-    else
-      delim = ","
-      while delim ~= "\n" do
-        
-        fb = fb .. string.sub(game_list, l+1, l+1)
-        l = l + 1
-        delim = string.sub(game_list, l+1, l+1)
-      end
-    end
- 
-    -- Get Game Internal Resolution
-    k,l = string.find(game_list, "IB=", l)
-    
-    if string.match(string.sub(game_list, l+1, l+5), "false") then
-      ib = "false"
-    else
-      delim = ","
-      while delim ~= "\n" do
-        ib = ib .. string.sub(game_list, l+1, l+1)
-        l = l + 1
-        delim = string.sub(game_list, l+1, l+1)
-      end
-    end
-
-     -- Get Game Frames Per Second Cap
-    k,l = string.find(game_list, "FPS=", l)
-    if string.match(string.sub(game_list, l+1, l+5), "false") then
-      fps = "false"
-    else
-      delim = ","
-      while l < string.len( game_list ) and delim ~= "\n" do
-        fps = fps .. string.sub(game_list, l+1, l+1)
-        l = l + 1
-        delim = string.sub(game_list, l+1, l+1)
-      end
-    end
-    return name, ids, fb, ib, fps, j
+  local gameBlock = ""
+  
+  if startPoint == nil or startPoint >= string.len(game_list) then
+    return false
   end
-  return false
+  
+  
+  local i, j = string.find(game_list, "#(.-)%[", startPoint)
+  
+  if i == nil or i >= string.len(game_list) then
+    return false
+  end
+
+  name = string.sub(game_list, i+1, j-1)
+  while i ~= nil do
+    
+    i, j = string.find(game_list, "#(.-)\n", j)
+   
+    
+    if i == nil then
+      break
+    end
+    
+    newName = string.sub(game_list, i, j-1)
+    
+    local k,l = string.find(newName, "%[")
+    if k ~= nil then
+      
+      newName = string.sub(newName, 2, k-1)
+      
+      if newName ~= name then
+        break
+      end
+
+    end
+  end
+  
+  if i == nil then
+    i = string.len(game_list) + 1
+  end
+  
+  gameBlock = string.sub(game_list, startPoint, i-1)
+  return gameBlock, i-1, name
+end
+
+function NewGameParameters(textBlock)
+  local ids = {}
+  local fb = "false"
+  local ib = "false"
+  local fps = "false"
+
+  if textBlock ~= false then
+    local i, j = string.find(textBlock, "%[P(.-),", 0)
+    local counter = 1
+    while i ~= nil do
+      ids[counter] = string.sub(textBlock, i+1, j-1)
+      counter = counter + 1
+
+      i, j = string.find(textBlock, "%[P(.-),", j)
+    end
+
+    i, j = string.find(textBlock, "@IB", 0)
+    if i ~= null then
+      ib = "OFF"
+    end
+
+    i, j = string.find(textBlock, "@FB", 0)
+    if i ~= null then
+      fb = "OFF"
+    end
+
+    i, j = string.find(textBlock, "@FPS", 0)
+    if i ~= null then
+      fps = "OFF"
+    end
+  end
+
+  return ids, fb, ib, fps
 end
 
 -- Add games to the game list
 function CreateGameList()
   System.createDirectory("ux0:data/VitaGrafix")
-  if not System.doesFileExist("ux0:data/VitaGrafix/gamelist.txt") then
-    local original_file = System.openFile("app0:/gamelist.txt", FREAD)
+  if not System.doesFileExist("ux0:data/VitaGrafix/patchlist.txt") then
+    local original_file = System.openFile("app0:/patchlist.txt", FREAD)
     System.seekFile(original_file, 0, SET)
     game_list = System.readFile(original_file, System.sizeFile(original_file))
     System.closeFile(original_file)
-    local new_file = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FCREATE)
+    local new_file = System.openFile("ux0:data/VitaGrafix/patchlist.txt", FCREATE)
     System.writeFile(new_file, game_list, string.len(game_list))
     System.closeFile(new_file)
 
   end
-  local file = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FREAD)
+  local file = System.openFile("ux0:data/VitaGrafix/patchlist.txt", FREAD)
   System.seekFile(file, 0, SET)
-  game_list = System.readFile(file, System.sizeFile(file)) 
-  local name, ids, fb, ib, fps, point = ReadGameParams(0) -- Read First Game Parameters
-  while name ~= false do -- While there is a game, keep adding games to the list
+  game_list = System.readFile(file, System.sizeFile(file))
+
+  local gameBlock, point, name = GetGameBlock(0)
+  -- Read First Game Parameters
+  while gameBlock ~= false do -- While there is a game, keep adding games to the list
+    local ids, fb, ib, fps = NewGameParameters(gameBlock)
     games[gameCounter] = Game:New(name, ids, fb, ib, fps, 0) -- Needs extra 0 or function bugs out and parameters go to the wrong variables
     gameCounter = gameCounter + 1
-    name, ids, fb, ib, fps, point = ReadGameParams(point)
+    gameBlock, point, name = GetGameBlock(point)
   end
   System.closeFile(file)
   gameCounter = 0 -- Set Game counter to 0 as it's now going to be used as our game selector on the menu
+end
+
+function VerifyGameExistence()
+  local markedToRemove = {}
+  for i = 1, #games, 1 do
+    if games[i].ib == "false" and games[i].fps == "false" and games[i].fb == "false" then
+      games[i+1].name = games[i+1].name .. "/" .. games[i].name
+      for j = 1, #games[i].id, 1 do
+        table.insert(games[i+1].id, games[i].id[j])
+      end
+      table.insert(markedToRemove, i)
+    end
+  end 
+  for i = 1, #markedToRemove, 1 do
+    table.remove( games, markedToRemove[i])
+    if markedToRemove[i+1] ~= nil then
+      markedToRemove[i+1] = markedToRemove[i+1] - 1
+    end
+  end
+
 end
 
 -- Finds current settings for all games
@@ -754,8 +789,8 @@ function GUI()
 
   Graphics.debugPrint(5, 10, "VitaGrafix Configurator", Color.new(255,255,255))
 
-  Graphics.debugPrint(300, 10, "List: " .. tostring(list_v_num), Color.new(255,255,255))
-  Graphics.debugPrint(400, 10, "App: " .. tostring(app_v_num), Color.new(255,255,255))
+  --Graphics.debugPrint(300, 10, "List: " .. tostring(list_v_num), Color.new(255,255,255))
+  Graphics.debugPrint(400, 10, "App: 2.0", Color.new(255,255,255))
 
  
   if gameCounter == 0 then  -- If on VitaGrafix settings
@@ -776,8 +811,8 @@ function GUI()
 
     Graphics.debugPrint(5, 150, "Enabled", Color.new(255,255,255))
     Graphics.debugPrint(5, 180, "OSD", Color.new(255,255,255))
-    Graphics.debugPrint(5, 210, "Auto Update List", Color.new(255,255,255))
-    Graphics.debugPrint(5, 240, "Update Lists Now", Color.new(255,255,255))
+    --Graphics.debugPrint(5, 210, "Auto Update List", Color.new(255,255,255))
+    --Graphics.debugPrint(5, 240, "Update Lists Now", Color.new(255,255,255))
 
     if main_enable == 1 then
       Graphics.debugPrint(250, 150, "X", Color.new(255,255,255))
@@ -791,20 +826,20 @@ function GUI()
       Graphics.debugPrint(250, 180, "", Color.new(255,255,255))
     end
 
-    if auto_update then
-      Graphics.debugPrint(250, 210, "X", Color.new(255,255,255))
-    else
-      Graphics.debugPrint(250, 210, "", Color.new(255,255,255))
-    end
+    --if auto_update then
+     -- Graphics.debugPrint(250, 210, "X", Color.new(255,255,255))
+    --else
+     -- Graphics.debugPrint(250, 210, "", Color.new(255,255,255))
+   -- end
 
 
 
-    objectNum = 4
+    objectNum = 2
 
     Graphics.debugPrint(5, 150 + 30 * objectNum, "Save Config", Color.new(255,255,255))
     save_button = objectNum + 1
 
-    available_buttons = 5
+    available_buttons = 3
 
   else -- If on any game
     
@@ -898,7 +933,7 @@ function GUI()
     if(games[gameCounter].japan) then
       region_text = region_text .. "[Japan] "
     end
-    if(games[gameCounter].Asia) then
+    if(games[gameCounter].asia) then
       region_text = region_text .. "[Asia] "
     end
     Graphics.debugPrint(5, 360, region_text, Color.new(255,255,255))
@@ -1035,16 +1070,17 @@ end
 -- Initialization function
 function Start()
   
-  GetLocalVersion()
+  --GetLocalVersion()
   CreateGameList()
+  VerifyGameExistence()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
   ReadAppConfig()
   pad = Controls.read()
-  if auto_update == true and not Controls.check(pad, SCE_CTRL_LTRIGGER) then
-    checkForUpgrade = true
-  end
+  --if auto_update == true and not Controls.check(pad, SCE_CTRL_LTRIGGER) then
+    --checkForUpgrade = true
+  --end
 end
 
 ------------------------------------------------------------------------------------------------- Code Execution ----------------------------------------------------------------------------
