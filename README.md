@@ -42,7 +42,7 @@ You'll be greeted by a VitaGrafix Settings screen, which contains the override s
  
  ## Cautions
  
- Not every option available might be compatible with each game, please refer to the [compatibility table on the VitaGrafix github page](https://github.com/Electry/VitaGrafix#supported-games)
+ Not every option available might be compatible with each game, please refer to the [compatibility table on the VitaGrafix patchlist github page](https://github.com/Electry/VitaGrafixPatchlist#supported-games)
  
  ## Build
 
