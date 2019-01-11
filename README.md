@@ -7,7 +7,7 @@ A GUI Configurator for the VitaGrafix plugin
 
 This app requires the instalation of [VitaGrafix by Electry](https://github.com/Electry/VitaGrafix)
 
-The configurator is compatible with **VitaGrafix v3.2**
+The configurator is compatible with **VitaGrafix v4.0**
 
 ## Usage
 
@@ -23,7 +23,7 @@ You'll be greeted by a VitaGrafix Settings screen, which contains the override s
 
 * **Cross:**
   * If the selected button is the "Enable" or "OSD" then it will toggle them On or Off (If marked by an X then they are On, if empty then they are Off)
-  * If the selected button is the "Internal Resolution" button, the app will open the Keyboard where you can type the intended Internal Resolution. This resolution can be anything with a width between 0 (exclusive) and 960 (inclusive), and a height between 0 (exclusive) and 544 (inclusive) and has to follow the format: WxH. The Internal Resolution mod can also be set to "OFF" by inputing that into the text field.
+  * If the selected button is the "Internal Resolution" button, the app will open the Keyboard where you can type the intended Internal Resolution. This resolution can be anything with a width between 0 (exclusive) and 960 (inclusive), and a height between 0 (exclusive) and 544 (inclusive) and has to follow the format: WxH. The Internal Resolution mod can also be set to "OFF" by inputing that into the text field. Some games also support multiple resolutions in this field, separated by a ",".
   * If the selected button is the Save Config button, it will save the entire config.
 
 * **Left and Right on the DPAD:**
