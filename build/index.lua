@@ -3,7 +3,7 @@
 Game = {}
 Game.__index = Game
 
-function Game:New(title, ids, framebuffer, internal, frameps)
+function Game:New(title, ids, framebuffer, internal, frameps, multisampleAA)
     local this = 
     {
         name = title,
@@ -11,11 +11,13 @@ function Game:New(title, ids, framebuffer, internal, frameps)
         fb = framebuffer,
         ib = internal,
         fps = frameps,
+        msaa = multisampleAA,
         enabled = 1,
         osd = 1,
         default_fb = framebuffer,
         default_ib = internal,
         default_fps = frameps,
+        default_msaa = multisampleAA,
         europe = false,
         usa = false,
         japan = false,
@@ -40,6 +42,7 @@ main_osd = 1 --VitaGrafix OSD Override
 fb_button = nil
 ib_button = nil
 fps_button = nil
+msaa_button = nil
 save_button = nil
 
 selected_button = 0
@@ -82,6 +85,7 @@ function NilButtons()
   fb_button = nil
   ib_button = nil
   fps_button = nil
+  msaa_button = nil
   save_button = nil
 end
 
@@ -478,6 +482,7 @@ function NewGameParameters(textBlock)
   local fb = "false"
   local ib = "false"
   local fps = "false"
+  local msaa = "false"
 
   if textBlock ~= false then
     local i, j = string.find(textBlock, "%[P(.-),", 0)
@@ -503,9 +508,15 @@ function NewGameParameters(textBlock)
     if i ~= null then
       fps = "OFF"
     end
+
+    i, j = string.find(textBlock, "@MSAA", 0)
+    if i ~= null then
+      msaa = "OFF"
+    end
+
   end
 
-  return ids, fb, ib, fps
+  return ids, fb, ib, fps, msaa
 end
 
 -- Add games to the game list
@@ -528,8 +539,8 @@ function CreateGameList()
   local gameBlock, point, name = GetGameBlock(0)
   -- Read First Game Parameters
   while gameBlock ~= false do -- While there is a game, keep adding games to the list
-    local ids, fb, ib, fps = NewGameParameters(gameBlock)
-    games[gameCounter] = Game:New(name, ids, fb, ib, fps, 0) -- Needs extra 0 or function bugs out and parameters go to the wrong variables
+    local ids, fb, ib, fps, msaa = NewGameParameters(gameBlock)
+    games[gameCounter] = Game:New(name, ids, fb, ib, fps, msaa, 0) -- Needs extra 0 or function bugs out and parameters go to the wrong variables
     gameCounter = gameCounter + 1
     gameBlock, point, name = GetGameBlock(point)
   end
@@ -540,7 +551,7 @@ end
 function VerifyGameExistence()
   local markedToRemove = {}
   for i = 1, #games, 1 do
-    if games[i].ib == "false" and games[i].fps == "false" and games[i].fb == "false" then
+    if games[i].ib == "false" and games[i].fps == "false" and games[i].fb == "false" and games[i].msaa == "false" then
       games[i+1].name = games[i+1].name .. "/" .. games[i].name
       for j = 1, #games[i].id, 1 do
         table.insert(games[i+1].id, games[i].id[j])
@@ -555,6 +566,11 @@ function VerifyGameExistence()
     end
   end
 
+end
+
+function SortGames()
+  local sort_func = function( a,b ) return a.name < b.name end
+  table.sort( games, sort_func )
 end
 
 -- Finds current settings for all games
@@ -641,6 +657,18 @@ function FindCurrentSettings()
               games[i].fps = fps
             end
 
+            k,l = string.find(pre_text, "MSAA=")
+            if k ~= nil then
+              local msaa = ""
+              delim = ","
+              while l < string.len( pre_text ) and delim ~= "\n" do
+                msaa = msaa .. string.sub(pre_text, l+1, l+1)
+                l = l + 1
+                delim = string.sub(pre_text, l+1, l+1)
+              end
+              games[i].msaa = msaa
+            end
+
           end
 
           break
@@ -661,7 +689,10 @@ function GetDefault(game, str)
     return game.default_ib
   elseif string.match( str, "FPS" ) then
     return game.default_fps
+  elseif string.match( str, "MSAA" ) then
+    return game.default_msaa
   end
+  
 end
 
 -- Update one game on the config file.
@@ -684,6 +715,10 @@ function WriteSingleGame(game)
 
     if game.fps ~= "false" then
       config_text = config_text .. "\nFPS=" .. game.fps
+    end
+
+    if game.msaa ~= "false" then
+      config_text = config_text .. "\nMSAA=" .. game.msaa
     end
 
     config_text = config_text .. "\n"
@@ -790,7 +825,7 @@ function GUI()
   Graphics.debugPrint(5, 10, "VitaGrafix Configurator", Color.new(255,255,255))
 
   --Graphics.debugPrint(300, 10, "List: " .. tostring(list_v_num), Color.new(255,255,255))
-  Graphics.debugPrint(400, 10, "App: 2.0", Color.new(255,255,255))
+  Graphics.debugPrint(400, 10, "App: 2.1", Color.new(255,255,255))
 
  
   if gameCounter == 0 then  -- If on VitaGrafix settings
@@ -918,6 +953,14 @@ function GUI()
       fps_button = objectNum
     end
 
+    if games[gameCounter].msaa ~= "false" then
+      Graphics.debugPrint(5, 150 + 30 * objectNum, "MSAA", Color.new(255,255,255))
+      Graphics.debugPrint(250, 150 + 30 * objectNum, games[gameCounter].msaa, Color.new(255,255,255))
+      Graphics.debugPrint(550, 150 + 30 * objectNum, "(Default: " .. games[gameCounter].default_msaa .. ")", Color.new(255,255,255))
+      objectNum = objectNum + 1
+      msaa_button = objectNum
+    end
+
     Graphics.debugPrint(5, 150 + 30 * objectNum, "Save Config", Color.new(255,255,255))
     objectNum = objectNum + 1
     save_button = objectNum
@@ -993,6 +1036,8 @@ function TrianglePressed()
     games[gameCounter].fb = games[gameCounter].default_fb
   elseif selected_button == fps_button then
     games[gameCounter].fps = games[gameCounter].default_fps
+  elseif selected_button == msaa_button then
+    games[gameCounter].msaa = games[gameCounter].default_msaa
   end
 end
 
@@ -1064,6 +1109,28 @@ function DirectionPressed(dir)
         games[gameCounter].fps = "30"
       end 
     end
+
+  elseif selected_button == msaa_button then -- Change MSAA
+
+    if string.match(games[gameCounter].msaa, "4") then
+      if dir == -1 then
+        games[gameCounter].msaa = "2"
+      else
+        games[gameCounter].msaa = "OFF"
+      end 
+    elseif string.match(games[gameCounter].msaa, "2") then
+      if dir == -1 then
+        games[gameCounter].msaa = "OFF"
+      else
+        games[gameCounter].msaa = "4"
+      end 
+    elseif string.match(games[gameCounter].msaa, "OFF") then
+      if dir == -1 then
+        games[gameCounter].msaa = "4"
+      else
+        games[gameCounter].msaa = "2"
+      end 
+    end
   end
 end
 
@@ -1073,6 +1140,7 @@ function Start()
   --GetLocalVersion()
   CreateGameList()
   VerifyGameExistence()
+  SortGames()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
