@@ -75,10 +75,17 @@ app_v_num = 0
 app_folder = "VGCF00001"
 
 auto_update = false
+display_installed = false
 
 current_version = true
 
 timerObj = Timer.new()
+
+installedGamesList = {} -- List to save installed games, used for the displaying only installed games option
+
+-- Navigation ids, help with displaying installed games only
+leftGameId = 0
+rightGameId = 0
 
 -- Set Buttons to nil each frame
 function NilButtons()
@@ -94,7 +101,7 @@ function ReadAppConfig()
   local file = nil
   if System.doesFileExist("ux0:data/VitaGrafix/appconfig.txt") == false then
     file = System.openFile("ux0:data/VitaGrafix/appconfig.txt", FCREATE)
-    local str = "auto_update=0"
+    local str = "display_installed=0"
     System.writeFile(file, str, string.len(str))
     System.closeFile(file)
   end
@@ -103,16 +110,21 @@ function ReadAppConfig()
   local app_cfg = System.readFile(file, System.sizeFile(file))
   System.closeFile(file)
 
-  if string.match( app_cfg, "auto_update=1") then
-    auto_update = true
+  if string.match( app_cfg, "display_installed=1") then
+    display_installed = true
+  else
+    file = System.openFile("ux0:data/VitaGrafix/appconfig.txt", FCREATE)
+    local str = "display_installed=0"
+    System.writeFile(file, str, string.len(str))
+    System.closeFile(file)
   end
 
 end
 
 function WriteAppConfig()
   local file = System.openFile("ux0:data/VitaGrafix/appconfig.txt", FCREATE)
-  local str = "auto_update="
-  if auto_update then
+  local str = "display_installed="
+  if display_installed then
     str = str .. 1
   else
     str = str .. 0
@@ -427,6 +439,59 @@ end
 function GetRegions()
   for i = 1, #games, 1 do
     GetLocations(games[i])
+  end
+end
+
+-- Get Installed games on a system
+function GetInstalledGames()
+  local installedGameDirs = System.listDirectory("ux0:/app")
+  for i = 1, #installedGameDirs, 1 do
+    table.insert(installedGamesList, installedGameDirs[i].name)
+  end
+end
+
+function CheckIfGameInstalled(game)
+ 
+  for i = 1, #game.id, 1 do
+    for j = 1, #installedGamesList, 1 do
+      if game.id[i] == installedGamesList[j] then
+        return true
+      end
+    end
+  end
+
+  return false
+end
+
+function FindGameInDirection(dir)
+  if display_installed then
+    if dir == -1 then
+      for i = gameCounter-1, 1, -1 do
+        local isInstalled = CheckIfGameInstalled(games[i])
+        if isInstalled then
+          return i
+        end
+      end
+      return 0
+    else
+      for i = gameCounter+1, #games, 1 do
+        local isInstalled = CheckIfGameInstalled(games[i])
+        if isInstalled then
+          return i
+        end
+      end
+      return 0
+    end
+  else
+    if dir == -1 then
+      return gameCounter - 1
+    else
+      if gameCounter < #games then
+        return gameCounter + 1
+      else
+        return 0
+      end
+    end
   end
 end
 
@@ -831,23 +896,67 @@ function GUI()
   if gameCounter == 0 then  -- If on VitaGrafix settings
     Graphics.debugPrint(350, 80, "VitaGrafix Settings", Color.new(255,255,255))
 
-    if string.len(games[#games].name) < 25 then
-      max_len = string.len(games[#games].name)
+   
+
+    local game1Name = games[#games].name
+    local game2Name = games[1].name
+    leftGameId = #games
+    rightGameId = 1
+
+    if display_installed == true then
+
+      local foundGame1 = false
+
+      for i = #games, 1, -1 do
+        local isInstalled = CheckIfGameInstalled(games[i])
+        if isInstalled == true then
+          game1Name = games[i].name
+          leftGameId = i
+          foundGame1 = true
+          break
+        end
+      end
+
+      local foundGame2 = false
+
+      for i = 1, #games, 1 do
+        local isInstalled = CheckIfGameInstalled(games[i])
+        if isInstalled == true then
+          game2Name = games[i].name
+          rightGameId = i
+          foundGame2 = true
+          break
+        end
+      end
+
+      if not foundGame1 then
+        game1Name = "VitaGrafix Settings"
+        leftGameId = 0
+      end
+
+      if not foundGame2 then
+        game2Name = "VitaGrafix Settings"
+        rightGameId = 0
+      end
+
     end
 
-    Graphics.debugPrint(5, 80, string.sub(games[#games].name, 0, max_len), Color.new(150,150,150))
+    if string.len(game1Name) < 25 then
+      max_len = string.len(game1Name)
+    end
+
+    Graphics.debugPrint(5, 80, string.sub(game1Name, 0, max_len), Color.new(150,150,150))
 
     max_len = 25
-    if string.len(games[1].name) < 25 then
-      max_len = string.len(games[1].name)
+    if string.len(game2Name) < 25 then
+      max_len = string.len(game2Name)
     end
 
-    Graphics.debugPrint(650, 80, string.sub(games[1].name, 0, max_len), Color.new(150,150,150))
+    Graphics.debugPrint(650, 80, string.sub(game2Name, 0, max_len), Color.new(150,150,150))
 
     Graphics.debugPrint(5, 150, "Enabled", Color.new(255,255,255))
     Graphics.debugPrint(5, 180, "OSD", Color.new(255,255,255))
-    --Graphics.debugPrint(5, 210, "Auto Update List", Color.new(255,255,255))
-    --Graphics.debugPrint(5, 240, "Update Lists Now", Color.new(255,255,255))
+    Graphics.debugPrint(5, 210, "Only show installed games", Color.new(255,255,255))
 
     if main_enable == 1 then
       Graphics.debugPrint(250, 150, "X", Color.new(255,255,255))
@@ -861,20 +970,18 @@ function GUI()
       Graphics.debugPrint(250, 180, "", Color.new(255,255,255))
     end
 
-    --if auto_update then
-     -- Graphics.debugPrint(250, 210, "X", Color.new(255,255,255))
-    --else
-     -- Graphics.debugPrint(250, 210, "", Color.new(255,255,255))
-   -- end
+    if display_installed == true then
+      Graphics.debugPrint(280, 210, "X", Color.new(255,255,255))
+    else
+      Graphics.debugPrint(280, 210, "", Color.new(255,255,255))
+    end
 
-
-
-    objectNum = 2
+    objectNum = 3
 
     Graphics.debugPrint(5, 150 + 30 * objectNum, "Save Config", Color.new(255,255,255))
     save_button = objectNum + 1
 
-    available_buttons = 3
+    available_buttons = 4
 
   else -- If on any game
     
@@ -887,24 +994,24 @@ function GUI()
     Graphics.fillRect(0, 350, 70, 110, Color.new(0,0,0))
     Graphics.fillRect(600, 960, 70, 110, Color.new(0,0,0))
 
-    if gameCounter == 1 then
+    if leftGameId == 0 then
       Graphics.debugPrint(5, 80, "VitaGrafix Settings", Color.new(150,150,150))
     else
       max_len = 25
-      if string.len(games[gameCounter-1].name) < 25 then
-        max_len = string.len(games[gameCounter-1].name)
+      if string.len(games[leftGameId].name) < 25 then
+        max_len = string.len(games[leftGameId].name)
       end
-      Graphics.debugPrint(5, 80, string.sub(games[gameCounter-1].name, 0, max_len), Color.new(150,150,150))
+      Graphics.debugPrint(5, 80, string.sub(games[leftGameId].name, 0, max_len), Color.new(150,150,150))
     end
     
-    if gameCounter == #games then
+    if rightGameId == 0 then
       Graphics.debugPrint(650, 80, "VitaGrafix Settings", Color.new(150,150,150))
     else
       max_len = 25
-      if string.len(games[gameCounter+1].name) < 25 then
-        max_len = string.len(games[gameCounter+1].name)
+      if string.len(games[rightGameId].name) < 25 then
+        max_len = string.len(games[rightGameId].name)
       end
-      Graphics.debugPrint(650, 80, string.sub(games[gameCounter+1].name, 0, max_len), Color.new(150,150,150))
+      Graphics.debugPrint(650, 80, string.sub(games[rightGameId].name, 0, max_len), Color.new(150,150,150))
     end
     
     Graphics.debugPrint(5, 150 + 30 * objectNum, "Enabled", Color.new(255,255,255))
@@ -1016,13 +1123,9 @@ function CrossPressed()
   elseif selected_button == ib_button then -- Internal res button, opens keyboard
     Keyboard.clear()
     Keyboard.show("0 < X <= 960 and 0 < Y <= 544 or OFF", games[gameCounter].ib, 255, TYPE_DEFAULT, MODE_TEXT)
-  elseif selected_button == 3 then -- Button 3 is the Auto Update button
+  elseif selected_button == 3 then -- Button 3 is the Display Installed button
     if gameCounter == 0 then
-      auto_update = not auto_update
-    end
-  elseif selected_button == 4 then -- Button 4 is the Update Now button
-    if gameCounter == 0 then
-      checkForUpgrade = true;
+      display_installed = not display_installed
     end
   end
 end
@@ -1045,18 +1148,16 @@ end
 function DirectionPressed(dir)
   if selected_button == 0 then -- Button 0 is the game list
     if dir == -1 then 
-      if gameCounter > 0 then
-        gameCounter = gameCounter - 1
-      elseif gameCounter == 0 then
-        gameCounter = #games
-      end
+      local temp = gameCounter
+      gameCounter = leftGameId
+      rightGameId = temp
+      leftGameId = FindGameInDirection(dir)
       SetScrollVars()
     else
-      if gameCounter < #games then
-        gameCounter = gameCounter + 1
-      elseif gameCounter == #games then
-        gameCounter = 0
-      end
+      local temp = gameCounter
+      gameCounter = rightGameId
+      leftGameId = temp
+      rightGameId = FindGameInDirection(dir)
       SetScrollVars()
     end
 
@@ -1141,6 +1242,7 @@ function Start()
   CreateGameList()
   VerifyGameExistence()
   SortGames()
+  GetInstalledGames()
   FindCurrentSettings()
   GetRegions()
   WriteToFile()
@@ -1184,20 +1286,18 @@ while true do
       -- Check if a button was just pressed and not held
       if(previousPad ~= pad) then
         if Controls.check(pad, SCE_CTRL_LTRIGGER) then
-          if gameCounter > 0 then
-            gameCounter = gameCounter - 1
-          elseif gameCounter == 0 then
-            gameCounter = #games
-          end
+          local temp = gameCounter
+          gameCounter = leftGameId
+          rightGameId = temp
+          leftGameId = FindGameInDirection(-1)
           SetScrollVars()
         end
 
         if Controls.check(pad, SCE_CTRL_RTRIGGER) then
-          if gameCounter < #games then
-            gameCounter = gameCounter + 1
-          elseif gameCounter == #games then
-            gameCounter = 0
-          end
+          local temp = gameCounter
+          gameCounter = rightGameId
+          leftGameId = temp
+          rightGameId = FindGameInDirection(1)
           SetScrollVars()
         end
 
