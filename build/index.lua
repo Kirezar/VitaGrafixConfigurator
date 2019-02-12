@@ -79,6 +79,8 @@ display_installed = false
 
 current_version = true
 
+finished_successfuly = true
+
 timerObj = Timer.new()
 
 installedGamesList = {} -- List to save installed games, used for the displaying only installed games option
@@ -444,7 +446,7 @@ end
 
 -- Get Installed games on a system
 function GetInstalledGames()
-  local installedGameDirs = System.listDirectory("ux0:/app")
+  local installedGameDirs = System.listDirectory("ur0:/appmeta")
   for i = 1, #installedGameDirs, 1 do
     table.insert(installedGamesList, installedGameDirs[i].name)
   end
@@ -621,14 +623,11 @@ function VerifyGameExistence()
       for j = 1, #games[i].id, 1 do
         table.insert(games[i+1].id, games[i].id[j])
       end
-      table.insert(markedToRemove, i)
+      table.insert(markedToRemove, i - #markedToRemove)
     end
   end 
   for i = 1, #markedToRemove, 1 do
     table.remove( games, markedToRemove[i])
-    if markedToRemove[i+1] ~= nil then
-      markedToRemove[i+1] = markedToRemove[i+1] - 1
-    end
   end
 
 end
@@ -1247,10 +1246,9 @@ function Start()
   GetRegions()
   WriteToFile()
   ReadAppConfig()
-  pad = Controls.read()
-  --if auto_update == true and not Controls.check(pad, SCE_CTRL_LTRIGGER) then
-    --checkForUpgrade = true
-  --end
+  if #games == 0 then
+    finished_successfuly = false
+  end
 end
 
 ------------------------------------------------------------------------------------------------- Code Execution ----------------------------------------------------------------------------
@@ -1271,83 +1269,92 @@ while true do
     end
 
     BeginDraw()
-    if Keyboard.getState() ~= RUNNING then 
+    if finished_successfuly then
+
+      if Keyboard.getState() ~= RUNNING then 
+        
+        
+
+        if selected_button > available_buttons then
+          selected_button = available_buttons
+        end
+
+        MoveText()
+        GUI()
+
+        -- Read what controls are pressed
+        pad = Controls.read()
       
-      if selected_button > available_buttons then
-        selected_button = available_buttons
-      end
-
-      MoveText()
-      GUI()
-
-      -- Read what controls are pressed
-      pad = Controls.read()
-    
-      -- Check if a button was just pressed and not held
-      if(previousPad ~= pad) then
-        if Controls.check(pad, SCE_CTRL_LTRIGGER) then
-          local temp = gameCounter
-          gameCounter = leftGameId
-          rightGameId = temp
-          leftGameId = FindGameInDirection(-1)
-          SetScrollVars()
-        end
-
-        if Controls.check(pad, SCE_CTRL_RTRIGGER) then
-          local temp = gameCounter
-          gameCounter = rightGameId
-          leftGameId = temp
-          rightGameId = FindGameInDirection(1)
-          SetScrollVars()
-        end
-
-        if Controls.check(pad, SCE_CTRL_CROSS) then
-          CrossPressed()
-        end
-
-        if Controls.check(pad, SCE_CTRL_TRIANGLE) then
-          TrianglePressed()
-        end
-
-        if Controls.check(pad, SCE_CTRL_LEFT) then
-          DirectionPressed(-1)
-        end
-
-        if Controls.check(pad, SCE_CTRL_RIGHT) then
-          DirectionPressed(1)
-        end
-
-        if Controls.check(pad, SCE_CTRL_UP) then
-          if selected_button > 0 then
-            selected_button = selected_button - 1
+        -- Check if a button was just pressed and not held
+        if(previousPad ~= pad) then
+          if Controls.check(pad, SCE_CTRL_LTRIGGER) then
+            local temp = gameCounter
+            gameCounter = leftGameId
+            rightGameId = temp
+            leftGameId = FindGameInDirection(-1)
+            SetScrollVars()
           end
-        end
 
-        if Controls.check(pad, SCE_CTRL_DOWN) then
-          if selected_button < available_buttons  then
-            selected_button = selected_button + 1
+          if Controls.check(pad, SCE_CTRL_RTRIGGER) then
+            local temp = gameCounter
+            gameCounter = rightGameId
+            leftGameId = temp
+            rightGameId = FindGameInDirection(1)
+            SetScrollVars()
           end
+
+          if Controls.check(pad, SCE_CTRL_CROSS) then
+            CrossPressed()
+          end
+
+          if Controls.check(pad, SCE_CTRL_TRIANGLE) then
+            TrianglePressed()
+          end
+
+          if Controls.check(pad, SCE_CTRL_LEFT) then
+            DirectionPressed(-1)
+          end
+
+          if Controls.check(pad, SCE_CTRL_RIGHT) then
+            DirectionPressed(1)
+          end
+
+          if Controls.check(pad, SCE_CTRL_UP) then
+            if selected_button > 0 then
+              selected_button = selected_button - 1
+            end
+          end
+
+          if Controls.check(pad, SCE_CTRL_DOWN) then
+            if selected_button < available_buttons  then
+              selected_button = selected_button + 1
+            end
+          end
+
         end
-
-      end
-
       
-    end
-    
-    -- Check if the keyboard is done and set the text to the keyboard input
-    if Keyboard.getState() == FINISHED then
-      local new_ib = Keyboard.getInput()
-      if string.match(string.upper( new_ib ), "OFF") then
-        new_ib = "OFF"
-      else
-        new_ib = string.lower( new_ib )
       end
-      if gameCounter ~= 0 then
-        games[gameCounter].ib = new_ib
+      
+      -- Check if the keyboard is done and set the text to the keyboard input
+      if Keyboard.getState() == FINISHED then
+        local new_ib = Keyboard.getInput()
+        if string.match(string.upper( new_ib ), "OFF") then
+          new_ib = "OFF"
+        else
+          new_ib = string.lower( new_ib )
+        end
+        if gameCounter ~= 0 then
+          games[gameCounter].ib = new_ib
+        end
+        Keyboard.clear()
       end
-      Keyboard.clear()
+
+    else
+      Graphics.debugPrint(300, 200, "Patchlist.txt not correctly set up", Color.new(255,255,255))
+      Graphics.debugPrint(180, 230, "Download it from https://github.com/Electry/VitaGrafixPatchlist", Color.new(255,255,255))
+      Graphics.debugPrint(300, 260, "and follow instructions to install", Color.new(255,255,255))
     end
-    
+
     previousPad = pad
     EndDraw()
   end
