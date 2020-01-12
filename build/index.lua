@@ -3,7 +3,7 @@
 Game = {}
 Game.__index = Game
 
-function Game:New(title, ids, framebuffer, internal, frameps, multisampleAA)
+function Game:New(title, ids, framebuffer, internal, frameps, multisampleAA, pfileUse, pfileName)
     local this = 
     {
         name = title,
@@ -21,7 +21,10 @@ function Game:New(title, ids, framebuffer, internal, frameps, multisampleAA)
         europe = false,
         usa = false,
         japan = false,
-        asia = false
+        asia = false,
+        usesPatchfile = pfileUse,
+        patchFile = pfileName
+
     }
 
     setmetatable(this, Game)
@@ -32,7 +35,7 @@ end
 games = {} -- Game List
 gameCounter = 1 -- Number of games counter
 
-game_list = "" -- gamelist.txt text
+game_list = "" -- patchlist.txt text
 config_text = "" -- config.txt text
 
 main_enable = 1 --VitaGrafix Enable Override
@@ -135,60 +138,6 @@ function WriteAppConfig()
   System.closeFile(file)
 end
 
-function DownloadFile(str)
-  -- Opening a new socket and connecting to the host
-  skt = Socket.connect("vgcfvita.000webhostapp.com", 80)
-
-  -- Our payload to request a file
-  payload = "GET /" .. str .. " HTTP/1.1\r\nHost: vgcfvita.000webhostapp.com\r\n\r\n"
-
-  -- Sending request
-  Socket.send(skt, payload)
-
-  -- Since sockets are non blocking, we wait till at least a byte is received
-  raw_data = ""
-  retry = 0
-  while raw_data == "" or retry < 1000 do
-    raw_data = raw_data .. Socket.receive(skt, 8192)
-    retry = retry + 1
-  end
-
-  if string.match(raw_data, "Length: ") then
-    -- Keep downloading till the whole response is received
-    dwnld_data = raw_data
-    retry = 0
-    while dwnld_data ~= "" or retry < 1000 do
-      dwnld_data = Socket.receive(skt, 8192)
-      raw_data = raw_data .. dwnld_data
-      if dwnld_data == "" then
-        retry = retry + 1
-      else
-        retry = 0
-      end
-    end
-
-    -- Extracting Content-Length value
-    offs1, offs2 = string.find(raw_data, "Length: ")
-    offs3 = string.find(raw_data, "\r", offs2)
-    content_length = tonumber(string.sub(raw_data, offs2, offs3))
-
-    -- Saving downloaded image
-    stub, content_offset = string.find(raw_data, "\r\n\r\n")
-    handle = System.openFile("ux0:data/new_".. str, FCREATE)
-    content = string.sub(raw_data, content_offset+1)
-    System.writeFile(handle, string.sub(raw_data, content_offset+1), string.len(content))
-    System.closeFile(handle)
-
-  else
-    Socket.close(skt)
-    return -1
-  end
-  -- Closing socket
-  Socket.close(skt)
-  return 1
-end
-
-
 function GetLocalVersion()
 
   local file = System.openFile("app0:/versions.txt", FREAD)
@@ -248,156 +197,6 @@ function GetLocalVersion()
   end
 
 
-
-end
-
-function GetVersion()
-  
-  GetLocalVersion()
-  local file = System.openFile("ux0:/data/VitaGrafix/versions.txt", FREAD)
-  System.seekFile(file, 0, SET)
-  local version_text = System.readFile(file, System.sizeFile(file))
-  System.closeFile(file)
-
-  local i,j = string.find(version_text, "gamelist=%d+%.%d+")
-  list_version = string.sub(version_text, i, j)
-  local list_version_num = GetNumber(list_version)
-
-  i,j = string.find(version_text, "app=%d+%.%d+")
-  app_version = string.sub(version_text, i, j)
-  local app_version_num = GetNumber(app_version)
-
-  -- Initializing Network
-
-  
-  Network.init()
-
-  -- Checking if connection is available
-  if Network.isWifiEnabled() then
-
-    if DownloadFile("versions.txt") == 1 then
-
-      -- Loading image in memory and deleting it from storage
-      local new_version_file = System.openFile("ux0:data/new_versions.txt", FREAD)
-      System.seekFile(new_version_file, 0, SET)
-      local new_version_text = System.readFile(new_version_file, System.sizeFile(new_version_file))
-      System.closeFile(new_version_file)
-      result = new_version_text
-      System.deleteFile("ux0:/data/new_versions.txt")
-
-      i,j = string.find(new_version_text, "gamelist=%d+%.%d+")
-      local new_list_version = string.sub(new_version_text, i, j)
-      i,j = string.find(new_version_text, "app=%d+%.%d+")
-      local new_app_version = string.sub(new_version_text, i, j)
-
-      local new_list_number = GetNumber(new_list_version)
-      local new_app_number = GetNumber(new_app_version)
-      
-      if app_version_num < new_app_number then 
-        
-        local continue = 0
-
-        while continue == 0 do
-
-          EndDraw()
-          BeginDraw()
-
-          pad = Controls.read()
-          Graphics.debugPrint(250, 192, "Your version is outdated, please update", Color.new(255,255,255))
-          Graphics.debugPrint(280, 232, "Current Version: " .. tostring(app_version_num) .. "  New Version: " .. tostring(new_app_number), Color.new(255,255,255))
-          Graphics.debugPrint(350, 262, "Cross: Continue", Color.new(255,255,255))
-
-          if pad ~= previousPad then
-            if Controls.check(pad, SCE_CTRL_CROSS) then
-              continue = 1
-            end
-          end
-          previousPad = pad
-          EndDraw()
-        end
-
-        Network.term()
-        return
-
-
-      end
-
-      if list_version_num < new_list_number then
-        local wantsToUpdate = 0
-        
-        while wantsToUpdate == 0 do
-
-          EndDraw()
-          BeginDraw()
-
-          pad = Controls.read()
-          Graphics.debugPrint(250, 192, "New game list version found, do you want to update?", Color.new(255,255,255))
-          Graphics.debugPrint(280, 232, "Current Version: " .. tostring(list_version_num) .. "  New Version: " .. tostring(new_list_number), Color.new(255,255,255))
-          Graphics.debugPrint(350, 262, "Cross: Yes   Circle: No", Color.new(255,255,255))
-
-          if pad ~= previousPad then
-            if Controls.check(pad, SCE_CTRL_CROSS) then
-              wantsToUpdate = 1
-            elseif Controls.check(pad, SCE_CTRL_CIRCLE) then
-              wantsToUpdate = 2
-            end
-          end
-
-          previousPad = pad
-          EndDraw()
-
-        end
-
-        if wantsToUpdate == 1 then
-          if DownloadFile("gamelist.txt") == 1 then
-            local new_game_list = System.openFile("ux0:data/new_gamelist.txt", FREAD)
-            System.seekFile(new_game_list, 0, SET)
-            local new_list_text = System.readFile(new_game_list, System.sizeFile(new_game_list))
-            System.closeFile(new_game_list)
-            System.deleteFile("ux0:data/new_gamelist.txt")
-            new_game_list = System.openFile("ux0:data/VitaGrafix/gamelist.txt", FCREATE)
-            System.writeFile(new_game_list, new_list_text, string.len(new_list_text))
-            System.closeFile(new_game_list)
-            games = {}
-            gameCounter = 1
-            Start()
-
-            file = System.openFile("ux0:data/Vitagrafix/versions.txt", FCREATE)
-            System.writeFile(file, new_version_text, string.len(new_version_text))
-            System.closeFile(file)
-          else
-            EndDraw()
-            BeginDraw()
-            Graphics.debugPrint(250, 192, "Error while downloading lists", Color.new(255,255,255))
-            EndDraw()
-            System.wait(1000000)
-          end
-        end
-      end
-    else
-      EndDraw()
-      BeginDraw()
-      Graphics.debugPrint(250, 192, "Error while checking version", Color.new(255,255,255))
-      EndDraw()
-      System.wait(1000000)
-    end
-
-  end
-
-  Network.term()
-
-  local file = System.openFile("ux0:/data/VitaGrafix/versions.txt", FREAD)
-  System.seekFile(file, 0, SET)
-  local version_text = System.readFile(file, System.sizeFile(file))
-  System.closeFile(file)
-
-  local i,j = string.find(version_text, "gamelist=%d+%.%d+")
-  list_version = string.sub(version_text, i, j)
-  list_v_num = GetNumber(list_version)
-
-  i,j = string.find(version_text, "app=%d+%.%d+")
-  app_version = string.sub(version_text, i, j)
-  app_v_num = GetNumber(app_version)
 
 end
 
@@ -505,43 +304,18 @@ function GetGameBlock(startPoint)
     return false
   end
   
-  
-  local i, j = string.find(game_list, "#(.-)%[", startPoint)
-  
-  if i == nil or i >= string.len(game_list) then
-    return false
-  end
+  local i, j = string.find(game_list, "#(.-)\n\n", startPoint)
+  local k, l = string.find(game_list, "#(.-)%[", startPoint)
 
-  name = string.sub(game_list, i+1, j-1)
-  while i ~= nil do
-    
-    i, j = string.find(game_list, "#(.-)\n", j)
-   
-    
-    if i == nil then
-      break
-    end
-    
-    newName = string.sub(game_list, i, j-1)
-    
-    local k,l = string.find(newName, "%[")
-    if k ~= nil then
-      
-      newName = string.sub(newName, 2, k-1)
-      
-      if newName ~= name then
-        break
-      end
+  name = string.sub(game_list, k+2, l-2)
+  name = string.gsub(name, "\n", "")
 
-    end
-  end
-  
   if i == nil then
     i = string.len(game_list) + 1
   end
   
-  gameBlock = string.sub(game_list, startPoint, i-1)
-  return gameBlock, i-1, name
+  gameBlock = string.sub(game_list, startPoint, j)
+  return gameBlock, j, name
 end
 
 function NewGameParameters(textBlock)
@@ -550,12 +324,15 @@ function NewGameParameters(textBlock)
   local ib = "false"
   local fps = "false"
   local msaa = "false"
+  local pfileUse = false
+  local pfileName = ""
 
   if textBlock ~= false then
     local i, j = string.find(textBlock, "%[P(.-),", 0)
     local counter = 1
     while i ~= nil do
       ids[counter] = string.sub(textBlock, i+1, j-1)
+      
       counter = counter + 1
 
       i, j = string.find(textBlock, "%[P(.-),", j)
@@ -575,15 +352,51 @@ function NewGameParameters(textBlock)
     if i ~= null then
       fps = "OFF"
     end
-
+    
     i, j = string.find(textBlock, "@MSAA", 0)
     if i ~= null then
       msaa = "OFF"
     end
+    
+    i, j = string.find(textBlock, "%!USE%((.-)%)", 0)
+    if i ~= null then
+      pfileUse = true
+      i, j = string.find(textBlock, "%((.-)%)", i)
+      local patchFileName = string.sub(textBlock, i+1, j-1)
+      pfileName = patchFileName
+      if System.doesFileExist("ux0:data/VitaGrafix/patch/" .. patchFileName .. ".txt") then
+ 
+      
+        local patch_file = System.openFile("ux0:data/VitaGrafix/patch/" .. patchFileName .. ".txt", FREAD)
+        System.seekFile(patch_file , 0, SET)
+        local patch_list = System.readFile(patch_file , System.sizeFile(patch_file ))
+        System.closeFile(patch_file )
+        
+        i, j = string.find(patch_list, "@IB", 0)
+        if i ~= null then
+          ib = "OFF"
+        end
 
+        i, j = string.find(patch_list, "@FB", 0)
+        if i ~= null then
+          fb = "OFF"
+        end
+
+        i, j = string.find(patch_list, "@FPS", 0)
+        if i ~= null then
+          fps = "OFF"
+        end
+        
+        i, j = string.find(patch_list, "@MSAA", 0)
+        if i ~= null then
+          msaa = "OFF"
+        end
+        
+      end
+    end
+    
   end
-
-  return ids, fb, ib, fps, msaa
+  return ids, fb, ib, fps, msaa, pfileUse, pfileName
 end
 
 -- Add games to the game list
@@ -602,12 +415,14 @@ function CreateGameList()
   local file = System.openFile("ux0:data/VitaGrafix/patchlist.txt", FREAD)
   System.seekFile(file, 0, SET)
   game_list = System.readFile(file, System.sizeFile(file))
+  
+  game_list = string.gsub(game_list, "\r", "")
 
-  local gameBlock, point, name = GetGameBlock(0)
+  local gameBlock, point, name = GetGameBlock(ExcludeHeader())
   -- Read First Game Parameters
   while gameBlock ~= false do -- While there is a game, keep adding games to the list
-    local ids, fb, ib, fps, msaa = NewGameParameters(gameBlock)
-    games[gameCounter] = Game:New(name, ids, fb, ib, fps, msaa, 0) -- Needs extra 0 or function bugs out and parameters go to the wrong variables
+    local ids, fb, ib, fps, msaa, pfileUse, pfileName = NewGameParameters(gameBlock)
+    games[gameCounter] = Game:New(name, ids, fb, ib, fps, msaa, pfileUse, pfileName, 0) -- Needs extra 0 or function bugs out and parameters go to the wrong variables
     gameCounter = gameCounter + 1
     gameBlock, point, name = GetGameBlock(point)
   end
@@ -617,19 +432,62 @@ end
 
 function VerifyGameExistence()
   local markedToRemove = {}
+  local skipCounter = 1
+  local lastGame = 0
   for i = 1, #games, 1 do
-    if games[i].ib == "false" and games[i].fps == "false" and games[i].fb == "false" and games[i].msaa == "false" then
-      games[i+1].name = games[i+1].name .. "/" .. games[i].name
-      for j = 1, #games[i].id, 1 do
-        table.insert(games[i+1].id, games[i].id[j])
-      end
-      table.insert(markedToRemove, i - #markedToRemove)
+    
+    if i ~= lastGame + skipCounter then
+      goto loopEnd
     end
-  end 
-  for i = 1, #markedToRemove, 1 do
+    
+    skipCounter = 1
+    for j = i + 1, #games, 1 do
+      if games[i].name == games[j].name then
+        
+          if games[j].ib ~= "false" then
+            games[i].ib = games[j].ib
+          end
+          
+          if games[j].fb ~= "false" then
+            games[i].fb = games[j].fb
+          end
+          
+          if games[j].fps ~= "false" then
+            games[i].fps = games[j].fps
+          end
+          
+          if games[j].ib ~= "false" then
+            games[i].msaa = games[j].msaa
+          end
+        
+        for k = 1, #games[j].id, 1 do
+          table.insert(games[i].id, games[j].id[k])
+        end
+        
+        table.insert(markedToRemove, j)
+        skipCounter = skipCounter + 1
+      
+      end
+      
+    end
+    lastGame = i
+    ::loopEnd::
+  end
+  
+  
+  for i = #markedToRemove, 1, -1 do
     table.remove( games, markedToRemove[i])
   end
 
+end
+
+function ExcludeHeader()
+  
+  local newStartPoint = 0
+  local i, j = string.find(game_list, "#(.-)\n\n", j)
+  
+  newStartPoint = j
+  return newStartPoint
 end
 
 function SortGames()
@@ -889,7 +747,7 @@ function GUI()
   Graphics.debugPrint(5, 10, "VitaGrafix Configurator", Color.new(255,255,255))
 
   --Graphics.debugPrint(300, 10, "List: " .. tostring(list_v_num), Color.new(255,255,255))
-  Graphics.debugPrint(400, 10, "App: 2.1", Color.new(255,255,255))
+  Graphics.debugPrint(400, 10, "App: 3.0", Color.new(255,255,255))
 
  
   if gameCounter == 0 then  -- If on VitaGrafix settings
@@ -1067,11 +925,15 @@ function GUI()
       msaa_button = objectNum
     end
 
+    
+
+
     Graphics.debugPrint(5, 150 + 30 * objectNum, "Save Config", Color.new(255,255,255))
     objectNum = objectNum + 1
     save_button = objectNum
 
     available_buttons = objectNum
+
     local region_text = "Regions Supported: "
     if(games[gameCounter].europe) then
       region_text = region_text .. "[Europe] "
@@ -1086,6 +948,14 @@ function GUI()
       region_text = region_text .. "[Asia] "
     end
     Graphics.debugPrint(5, 360, region_text, Color.new(255,255,255))
+
+
+    if games[gameCounter].msaa == "false" and games[gameCounter].fps == "false" and games[gameCounter].ib == "false" and games[gameCounter].fb == "false" then
+      if games[gameCounter].usesPatchfile == true then
+        Graphics.debugPrint(5, 420, "This game requires the specific patch file " .. games[gameCounter].patchFile .. ".txt", Color.new(255,255,255))
+        Graphics.debugPrint(5, 450, "Installed at ux0:data/VitaGrafix/patch/", Color.new(255,255,255))
+      end
+    end
 
     if selected_button > 2 and selected_button < available_buttons then
       Graphics.debugPrint(600, 10, "Press Triangle for default setting", Color.new(255,255,255))
@@ -1198,15 +1068,21 @@ function DirectionPressed(dir)
       end 
     elseif string.match(games[gameCounter].fps, "30") then
       if dir == -1 then
-        games[gameCounter].fps = "OFF"
+        games[gameCounter].fps = "20"
       else
         games[gameCounter].fps = "60"
+      end 
+    elseif string.match(games[gameCounter].fps, "20") then
+      if dir == -1 then
+        games[gameCounter].fps = "OFF"
+      else
+        games[gameCounter].fps = "30"
       end 
     elseif string.match(games[gameCounter].fps, "OFF") then
       if dir == -1 then
         games[gameCounter].fps = "60"
       else
-        games[gameCounter].fps = "30"
+        games[gameCounter].fps = "20"
       end 
     end
 
