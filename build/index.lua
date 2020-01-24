@@ -1106,6 +1106,13 @@ function DirectionPressed(dir)
       else
         games[gameCounter].msaa = "2"
       end
+		
+    elseif string.match(games[gameCounter].msaa, "OFF") then
+      if dir == -1 then
+        games[gameCounter].msaa = "4"
+      else
+        games[gameCounter].msaa = "1"
+      end 
     end
   end
 end
