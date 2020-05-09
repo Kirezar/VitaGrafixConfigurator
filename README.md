@@ -7,7 +7,7 @@ A GUI Configurator for the VitaGrafix plugin
 
 This app requires the instalation of [VitaGrafix by Electry](https://github.com/Electry/VitaGrafix)
 
-The configurator is compatible with **VitaGrafix v4.0**
+The configurator is compatible with **VitaGrafix v5.0**+
 
 ## Usage
 
